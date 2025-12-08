@@ -1,0 +1,6 @@
+export * from './cart-icon'
+export * from './order-icon'
+export * from './menu-icon'
+export * from './tg-icon'
+export * from './vk-icon'
+export * from './instagram-icon'
