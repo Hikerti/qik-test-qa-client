@@ -16,8 +16,6 @@ export namespace UserDTO {
   export type Login = Pick<UserDTO, "email"> & { password: string };
   export type Register = Pick<UserDTO, "name" | "email"> & { password: string };
   export type Update = Partial<
-    Omit<UserDTO, "id" | "email" | "lastSeenAt"> & {
-      last_seen_at: number;
-    }
+    Omit<UserDTO, "id" | "email" | "updatedAt" | "theme">
   >;
 }

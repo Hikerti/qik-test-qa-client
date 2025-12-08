@@ -20,7 +20,7 @@ export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
   return (
     <html lang={"ru"} style={inter.style} className={"scrollbar-hide"}>
       <body className={`antialiased`}>
-        <AppProvider>{children} </AppProvider>
+        <AppProvider>{children}</AppProvider>
       </body>
     </html>
   );

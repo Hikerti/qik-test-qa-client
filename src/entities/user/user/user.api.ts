@@ -39,11 +39,6 @@ export const loginUser = buildFetcher<{ user: UserDTO }, { method: 'POST'; body:
   `/auth/login`
 )
 
-export const setTelegramUser = buildFetcher<
-  { user: UserDTO },
-  { method: 'PUT'; body: UserDTO.TelegramLogin }
->(`/auth/telegram/set`)
-
 export const refreshUser = buildFetcher<{}, { method: 'PUT' }>(`/auth/refresh`)
 
 export const logoutUser = buildFetcher<{}, { method: 'DELETE' }>(`/auth/logout`)

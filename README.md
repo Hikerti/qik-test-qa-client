@@ -8,6 +8,6 @@
 - [shared](/src/shared) - Reusable entities
     - [api](/src/shared/api) - API call system
     - [types](/src/shared/types) - Reusable types
-    - [ui](/src/shared/ui) - UI components (atomic design)
+    - [ui](/src/shared/ui) - UI components 
     - [libs](/src/shared/libs) - Libraries for APIs
 

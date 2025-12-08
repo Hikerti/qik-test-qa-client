@@ -13,8 +13,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
-  return <>
-    <p className="text-blue-500">первая страница</p>
-    <Button>нажми на меня</Button>
-  </>
+  return (
+    <>
+      <p className="text-blue-500">первая страница</p>
+      <Button>нажми на меня</Button>
+    </>
+  );
 }

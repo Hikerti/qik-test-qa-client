@@ -35,11 +35,3 @@ export const formatDate = (dateString: string) => {
     year: 'numeric',
   }).format(date)
 }
-
-// @todo: Почему это в утилитах? Спроси GPT почему тут хранить такой код - зло
-export const discountPercent = (hasDiscount: boolean, discountPrice: number, price: number) => {
-  return hasDiscount ? Math.round(100 - (discountPrice / price) * 100) : 0
-}
-
-// @todo: Бессмысленная функция, не несущая никакого смысла
-export const imageSrc = (src?: string) => (src?.startsWith('http') ? src : '')
