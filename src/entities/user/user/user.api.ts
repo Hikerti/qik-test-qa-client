@@ -2,12 +2,10 @@ import { buildFetcher, PaginationDTO } from '@shared'
 
 import { UserDTO } from './user.dto'
 
-// user
-
 export const getUsersList = buildFetcher<
   { users: UserDTO[]; pagination: PaginationDTO.Response },
   { method: 'GET'; query: PaginationDTO.Request }
->(`/users`)
+>(`/users/all`)
 
 export const getUserById = buildFetcher<
   { user: UserDTO },

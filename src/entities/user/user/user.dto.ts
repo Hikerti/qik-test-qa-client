@@ -8,14 +8,13 @@ export type UserDTO = {
   name: string;
   email: string;
   theme: UserTheme;
-  updatedAt: number;
-  createdAt: number;
+  gitHubId?: string;
+  lastSentAt: Date;
+  createdAt: Date;
 };
 
 export namespace UserDTO {
   export type Login = Pick<UserDTO, "email"> & { password: string };
   export type Register = Pick<UserDTO, "name" | "email"> & { password: string };
-  export type Update = Partial<
-    Omit<UserDTO, "id" | "email" | "updatedAt" | "theme">
-  >;
+  export type Update = Partial<Omit<UserDTO, "id" | "createdAt">>;
 }
