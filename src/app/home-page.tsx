@@ -2,23 +2,25 @@
 
 import React, { useEffect, useState } from "react";
 import { Page } from "@/shared/ui/templates/page";
-import { ChatsDTO, getChatsByChatList } from "@/entities/chats"; // Предполагаем, что api экспортировано
+
+// Entities
+import { ChatsDTO, getChatsByChatList } from "@/entities/chats";
 import { MessagesDTO, getMessagesByChatList } from "@/entities/messages";
-import { UserDTO, getAuthorizedUser, UserTheme } from "@/entities/user";
+import {UserDTO, getAuthorizedUser, UserTheme, getUsersList} from "@/entities/user";
+import {AuthLayout} from "@/widgets/auth-layout/ui";
+import {LoginForm, RegisterForm} from "@/features/auth/ui";
 import {Sidebar} from "@/widgets/sidebar/ui";
 import {ChatWindow} from "@/widgets/chat-window/ui";
+import {useFetcher} from "@shared";
 
-const MOCK_USER: UserDTO = {
-    id: "1",
-    name: "User",
-    email: "user@qik.ai",
-    theme: UserTheme.light,
-    lastSentAt: new Date(),
-    createdAt: new Date(),
-};
+
 
 export const HomePage = () => {
-    const [user, setUser] = useState<UserDTO>(MOCK_USER);
+    // --- AUTH STATE ---
+    const [user, setUser] = useState<UserDTO | null>(null); // По умолчанию null
+    const [authView, setAuthView] = useState<"login" | "register">("register"); // По умолчанию регистрация (как на скрине)
+
+    // --- CHAT STATE ---
     const [chats, setChats] = useState<ChatsDTO[]>([]);
     const [activeChatId, setActiveChatId] = useState<string | undefined>(undefined);
     const [messages, setMessages] = useState<MessagesDTO[]>([]);
@@ -26,10 +28,21 @@ export const HomePage = () => {
     const [isChatsLoading, setIsChatsLoading] = useState(false);
     const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
+    // const {} = useFetcher(getUsersList);
+
+    // --- EFFECTS ---
+
+    // 1. Загрузка чатов (только если есть User)
     useEffect(() => {
+        if (!user) return; // Не грузим чаты, пока не вошли
+
         const initData = async () => {
             setIsChatsLoading(true);
             try {
+                // Тут в будущем будет реальный запрос API
+                // const { chats } = await getChatsByChatList(...);
+
+                // MOCK DATA
                 setChats([
                     { id: "1", title: "Чат о React архитектуре", createdAt: new Date() },
                     { id: "2", title: "Планирование проекта", createdAt: new Date() }
@@ -41,8 +54,9 @@ export const HomePage = () => {
             }
         };
         initData();
-    }, []);
+    }, [user]);
 
+    // 2. Загрузка сообщений при выборе чата
     useEffect(() => {
         if (!activeChatId) {
             setMessages([]);
@@ -52,6 +66,7 @@ export const HomePage = () => {
         const fetchMessages = async () => {
             setIsMessagesLoading(true);
             try {
+                // Тут в будущем запрос API по activeChatId
                 setMessages([]);
             } catch (e) {
                 console.error(e);
@@ -62,6 +77,23 @@ export const HomePage = () => {
         fetchMessages();
     }, [activeChatId]);
 
+    // --- HANDLERS ---
+
+    // Авторизация успешна
+    const handleAuthSuccess = (loggedInUser: UserDTO) => {
+        setUser(loggedInUser);
+        // Чаты загрузятся автоматически благодаря useEffect([user])
+    };
+
+    const handleLogout = () => {
+        setUser(null);
+        setAuthView("login"); // При выходе показываем форму входа
+        setChats([]);
+        setMessages([]);
+        setActiveChatId(undefined);
+    };
+
+    // Чат хендлеры
     const handleSelectChat = (id: string) => {
         setActiveChatId(id);
     };
@@ -73,11 +105,11 @@ export const HomePage = () => {
 
     const handleMessageSent = (newMessage: MessagesDTO) => {
         setMessages((prev) => [...prev, newMessage]);
-
     };
 
     const handleEditChat = (id: string, newTitle: string) => {
         console.log("Edit chat", id, newTitle);
+        // Логика обновления названия
     };
 
     const handleDeleteChat = (id: string) => {
@@ -86,11 +118,44 @@ export const HomePage = () => {
         if (activeChatId === id) setActiveChatId(undefined);
     };
 
-    const handleLogout = () => {
-        console.log("Logout");
-    };
+    // --- RENDER ---
 
+    // 1. Если пользователь НЕ авторизован -> показываем экран Auth
+    if (!user) {
+        const isLogin = authView === "login";
 
+        return (
+            <AuthLayout
+                title={isLogin ? "Авторизация" : "Регистрация"}
+                onBack={() => console.log("Back clicked")} // Можно сделать редирект на лендинг
+                footerLink={
+                    isLogin ? (
+                        <>
+                            Нет аккаунта?{" "}
+                            <button onClick={() => setAuthView("register")} className="text-blue-500 hover:underline">
+                                Зарегистрироваться
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            Есть аккаунт?{" "}
+                            <button onClick={() => setAuthView("login")} className="text-blue-500 hover:underline">
+                                Войти
+                            </button>
+                        </>
+                    )
+                }
+            >
+                {isLogin ? (
+                    <LoginForm onSuccess={handleAuthSuccess} />
+                ) : (
+                    <RegisterForm onSuccess={handleAuthSuccess} />
+                )}
+            </AuthLayout>
+        );
+    }
+
+    // 2. Если авторизован -> показываем Чат
     return (
         <Page
             Sidebar={
@@ -104,7 +169,6 @@ export const HomePage = () => {
                     onEditChat={handleEditChat}
                     onDeleteChat={handleDeleteChat}
                     onLogout={handleLogout}
-                    // Важно: твой SidebarWidget должен занимать 100% высоты
                     className="h-full border-r"
                 />
             }
