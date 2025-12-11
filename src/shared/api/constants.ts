@@ -1,9 +1,7 @@
 // @ts-ignore
-const isLocal = 'local'
+const isLocal = process.env.NODE_ENV ?? "local";
 
-export const BASE_URL = isLocal
-  ? 'http://localhost:3004/api/v1'
-  : `https://dev.webway.studio/api/v1`
-export const CDN_URL = isLocal
-  ? 'http://localhost:9000/local'
-  : `https://cdn.webway.studio/${process.env.NODE_ENV === 'production' ? 'prod' : 'dev'}`
+export const BASE_URL =
+  isLocal === "production"
+    ? "https://87.242.101.112/api/v1"
+    : "http://localhost:3004/api/v1";
