@@ -1,22 +1,13 @@
-import { Button } from "@/components/ui/button";
 import type { Metadata } from "next";
+import { HomePage } from "./home-page";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Default Landing Title",
-    description: "Default description",
-    openGraph: {
-      title: "Default Open Graph",
-      description: "Default Open Graph",
-    },
+    title: "QIK | AI Chat",
+    description: "Your AI Assistant",
   };
 }
 
 export default async function LandingPage() {
-  return (
-    <>
-      <p className="text-blue-500">первая страница</p>
-      <Button>нажми на меня</Button>
-    </>
-  );
+  return <HomePage />;
 }

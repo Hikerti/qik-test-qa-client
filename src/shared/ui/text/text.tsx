@@ -15,7 +15,7 @@ const H1 = ({
 }: TextProps<HTMLHeadingElement>) => (
   <h1
     className={clsx(
-      "text-[20px] leading-[24px] font-semibold tracking-[-0.02em] text-[var(--foreground)]",
+      "text-[24px] leading-[28px] font-semibold tracking-[-0.02em] text-[var(--foreground)]",
       className,
     )}
     {...props}
