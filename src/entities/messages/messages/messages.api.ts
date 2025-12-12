@@ -3,7 +3,7 @@ import { MessagesDTO, SenderType } from "@/entities";
 
 export const getMessagesByChatList = buildFetcher<
   { messages: MessagesDTO[]; pagination: PaginationDTO.Response },
-  { method: "GET"; query: PaginationDTO.Request; params: { chatsId: string } }
+  { method: "GET"; query: PaginationDTO.Request; params: { chatId: string } }
 >(`/messages/:chatId/all`);
 
 export const getMessagesByChatAndSenderList = buildFetcher<

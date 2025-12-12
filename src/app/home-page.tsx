@@ -3,143 +3,138 @@
 import React, { useEffect, useState } from "react";
 import { Page } from "@/shared/ui/templates/page";
 
-// Entities
-import { ChatsDTO, getChatsByChatList } from "@/entities/chats";
-import { MessagesDTO, getMessagesByChatList } from "@/entities/messages";
-import {UserDTO, getAuthorizedUser, UserTheme, getUsersList} from "@/entities/user";
-import {AuthLayout} from "@/widgets/auth-layout/ui";
-import {LoginForm, RegisterForm} from "@/features/auth/ui";
-import {Sidebar} from "@/widgets/sidebar/ui";
-import {ChatWindow} from "@/widgets/chat-window/ui";
-import {useFetcher} from "@shared";
+// Entities & Types
+import { MessagesDTO } from "@/entities/messages";
+import { UserDTO } from "@/entities/user";
 
+// Widgets & Features
+import { AuthLayout } from "@/widgets/auth-layout/ui";
+import { LoginForm, RegisterForm } from "@/features/auth/ui";
+import { Sidebar } from "@/widgets/sidebar/ui";
+import { ChatWindow } from "@/widgets/chat-window/ui";
 
+// Stores
+import { useChatsStore } from "@/state/chats";
+import { useMessagesStore } from "@/state/messages";
+import { useUserStore } from "@state";
 
 export const HomePage = () => {
-    // --- AUTH STATE ---
-    const [user, setUser] = useState<UserDTO | null>(null); // По умолчанию null
-    const [authView, setAuthView] = useState<"login" | "register">("register"); // По умолчанию регистрация (как на скрине)
+    // 1. User Store
+    const { user, setUser, clearUser } = useUserStore();
 
-    // --- CHAT STATE ---
-    const [chats, setChats] = useState<ChatsDTO[]>([]);
-    const [activeChatId, setActiveChatId] = useState<string | undefined>(undefined);
-    const [messages, setMessages] = useState<MessagesDTO[]>([]);
+    // 2. Chats Store
+    const {
+        chats,
+        activeChatId,
+        isLoading: isChatsLoading,
+        fetchChats,
+        createNewChat,
+        selectChat,
+        deleteChatById,
+        updateChatTitle,
+        reset: resetChats
+    } = useChatsStore();
 
-    const [isChatsLoading, setIsChatsLoading] = useState(false);
-    const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+    // 3. Messages Store
+    const {
+        messages,
+        isLoading: isMessagesLoading,
+        fetchMessages,
+        sendMessage,
+        clearMessages
+    } = useMessagesStore();
 
-    // const {} = useFetcher(getUsersList);
+    // Local State
+    const [authView, setAuthView] = useState<"login" | "register">("login");
 
     // --- EFFECTS ---
 
-    // 1. Загрузка чатов (только если есть User)
+    // 1. Загрузка чатов
     useEffect(() => {
-        if (!user) return; // Не грузим чаты, пока не вошли
-
-        const initData = async () => {
-            setIsChatsLoading(true);
-            try {
-                // Тут в будущем будет реальный запрос API
-                // const { chats } = await getChatsByChatList(...);
-
-                // MOCK DATA
-                setChats([
-                    { id: "1", title: "Чат о React архитектуре", createdAt: new Date() },
-                    { id: "2", title: "Планирование проекта", createdAt: new Date() }
-                ]);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setIsChatsLoading(false);
-            }
-        };
-        initData();
-    }, [user]);
-
-    // 2. Загрузка сообщений при выборе чата
-    useEffect(() => {
-        if (!activeChatId) {
-            setMessages([]);
-            return;
+        if (user) {
+            fetchChats();
         }
+    }, [user, fetchChats]);
 
-        const fetchMessages = async () => {
-            setIsMessagesLoading(true);
-            try {
-                // Тут в будущем запрос API по activeChatId
-                setMessages([]);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setIsMessagesLoading(false);
-            }
-        };
-        fetchMessages();
-    }, [activeChatId]);
+    // 2. Загрузка сообщений при смене чата
+    useEffect(() => {
+        if (activeChatId) {
+            fetchMessages(activeChatId);
+        } else {
+            clearMessages();
+        }
+    }, [activeChatId, fetchMessages, clearMessages]);
 
     // --- HANDLERS ---
 
-    // Авторизация успешна
     const handleAuthSuccess = (loggedInUser: UserDTO) => {
         setUser(loggedInUser);
-        // Чаты загрузятся автоматически благодаря useEffect([user])
     };
 
     const handleLogout = () => {
-        setUser(null);
-        setAuthView("login"); // При выходе показываем форму входа
-        setChats([]);
-        setMessages([]);
-        setActiveChatId(undefined);
+        clearUser();
+        resetChats();
+        clearMessages();
+        setAuthView("login");
     };
 
-    // Чат хендлеры
-    const handleSelectChat = (id: string) => {
-        setActiveChatId(id);
-    };
+    // ОБНОВЛЕННАЯ ЛОГИКА ОТПРАВКИ
+    const handleSendMessage = async (input: string | MessagesDTO) => {
+        const content = typeof input === "string" ? input : input.content;
 
-    const handleNewChat = () => {
-        setActiveChatId(undefined);
-        setMessages([]);
-    };
+        let targetChatId = activeChatId;
 
-    const handleMessageSent = (newMessage: MessagesDTO) => {
-        setMessages((prev) => [...prev, newMessage]);
-    };
+        // Если чат не выбран — создаем новый
+        if (!targetChatId) {
+            // Генерируем название из первых 30 символов сообщения
+            const title = content.slice(0, 30) + (content.length > 30 ? "..." : "");
 
-    const handleEditChat = (id: string, newTitle: string) => {
-        console.log("Edit chat", id, newTitle);
-        // Логика обновления названия
-    };
+            // createNewChat теперь возвращает ID (см. изменения в chats.store.ts)
+            const newChatId = await createNewChat(title);
 
-    const handleDeleteChat = (id: string) => {
-        console.log("Delete chat", id);
-        setChats(prev => prev.filter(c => c.id !== id));
-        if (activeChatId === id) setActiveChatId(undefined);
+            if (newChatId) {
+                targetChatId = newChatId;
+                // createNewChat в сторе уже делает setActiveChatId(newChatId),
+                // поэтому useEffect сработает и подгрузит (пустой) список сообщений,
+                // но нам не нужно ждать useEffect, чтобы отправить сообщение.
+            } else {
+                // Если создать не удалось (ошибка сети), прерываем
+                return;
+            }
+        }
+
+        // Отправляем сообщение в целевой чат
+        if (targetChatId) {
+            await sendMessage(targetChatId, content);
+        }
     };
 
     // --- RENDER ---
 
-    // 1. Если пользователь НЕ авторизован -> показываем экран Auth
     if (!user) {
         const isLogin = authView === "login";
-
         return (
             <AuthLayout
                 title={isLogin ? "Авторизация" : "Регистрация"}
-                onBack={() => console.log("Back clicked")} // Можно сделать редирект на лендинг
+                onBack={() => {}}
                 footerLink={
                     isLogin ? (
                         <>
                             Нет аккаунта?{" "}
-                            <button onClick={() => setAuthView("register")} className="text-blue-500 hover:underline">
+                            <button
+                                onClick={() => setAuthView("register")}
+                                className="text-primary hover:underline font-medium"
+                            >
                                 Зарегистрироваться
                             </button>
                         </>
                     ) : (
                         <>
                             Есть аккаунт?{" "}
-                            <button onClick={() => setAuthView("login")} className="text-blue-500 hover:underline">
+                            <button
+                                onClick={() => setAuthView("login")}
+                                className="text-primary hover:underline font-medium"
+                            >
                                 Войти
                             </button>
                         </>
@@ -155,7 +150,6 @@ export const HomePage = () => {
         );
     }
 
-    // 2. Если авторизован -> показываем Чат
     return (
         <Page
             Sidebar={
@@ -164,21 +158,23 @@ export const HomePage = () => {
                     activeChatId={activeChatId}
                     user={user}
                     isLoading={isChatsLoading}
-                    onNewChat={handleNewChat}
-                    onSelectChat={handleSelectChat}
-                    onEditChat={handleEditChat}
-                    onDeleteChat={handleDeleteChat}
+                    onNewChat={() => createNewChat()} // Кнопка "Новый чат" создает с дефолтным названием
+                    onSelectChat={selectChat}
+                    onEditChat={updateChatTitle}
+                    onDeleteChat={deleteChatById}
                     onLogout={handleLogout}
-                    className="h-full border-r"
+                    className="h-full border-r border-sidebar-border bg-sidebar"
                 />
             }
             Main={
                 <ChatWindow
-                    chatId={activeChatId || "new"}
-                    chatTitle={chats.find(c => c.id === activeChatId)?.title}
+                    // Если чат не выбран, передаем пустую строку.
+                    // Теперь это штатная ситуация для "Нового чата" перед первым сообщением
+                    chatId={activeChatId || ""}
+                    chatTitle={chats.find((c) => c.id === activeChatId)?.title}
                     messages={messages}
                     isLoading={isMessagesLoading}
-                    onNewMessage={handleMessageSent}
+                    onNewMessage={handleSendMessage}
                 />
             }
         />

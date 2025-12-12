@@ -1,22 +1,32 @@
 "use client";
 
-import React, { KeyboardEvent } from "react";
-import {ArrowRight, SendHorizontal} from "lucide-react";
-import { MessagesDTO } from "@/entities/messages";
-import {useSendMessage} from "@/features/send-message";
+import React, { KeyboardEvent, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { Inputs } from "@/shared/ui/Inputs";
 
 interface SendMessageFormProps {
-    chatId: string;
-    onMessageSent?: (message: MessagesDTO) => void;
+    // Убираем chatId из пропсов, он тут не нужен, так как отправляет родитель
+    // chatId?: string;
+
+    // Теперь ожидаем, что родитель примет строку или объект (как у вас в HomePage)
+    onMessageSent?: (text: string) => void;
     className?: string;
+    isLoading?: boolean; // Принимаем состояние загрузки снаружи
 }
 
-export const SendMessageForm = ({ chatId, onMessageSent, className }: SendMessageFormProps) => {
-    const { text, setText, isLoading, handleSend } = useSendMessage({
-        chatId,
-        onSuccess: onMessageSent
-    });
+export const SendMessageForm = ({ onMessageSent, className, isLoading }: SendMessageFormProps) => {
+    // Локальный стейт только для текста
+    const [text, setText] = useState("");
+
+    const handleSend = () => {
+        if (!text.trim() || isLoading) return;
+
+        // 1. Просто передаем текст наверх. НЕ делаем запросов тут.
+        onMessageSent?.(text);
+
+        // 2. Очищаем поле
+        setText("");
+    };
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
