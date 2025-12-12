@@ -6,7 +6,7 @@ import { UserTheme, UserDTO, updateAuthorizedUser } from "@entities";
 
 interface ClientThemeProviderProps {
   children: ReactNode;
-  user?: UserDTO;
+  user: UserDTO | null;
 }
 
 export const ClientThemeProvider = ({

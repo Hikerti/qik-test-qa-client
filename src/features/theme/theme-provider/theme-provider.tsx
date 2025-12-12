@@ -6,11 +6,7 @@ import { useUserStore } from "@state";
 
 export const ThemeProvider: FC<ThemeProvider.Props> = ({ children }) => {
   const user = useUserStore((state) => state.user);
-  if (user) {
-    return <ClientThemeProvider user={user}>{children}</ClientThemeProvider>;
-  } else {
-    return <></>;
-  }
+  return <ClientThemeProvider user={user}>{children}</ClientThemeProvider>
 };
 
 export namespace ThemeProvider {
