@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, ReactNode } from "react";
-import { useUIStore } from "@state";
-import { UserTheme, UserDTO, updateAuthorizedUser } from "@entities";
+import { UserTheme, UserDTO, updateAuthorizedUser } from "@/entities/user";
+import {useUIStore} from "@state";
 
 interface ClientThemeProviderProps {
   children: ReactNode;
@@ -10,49 +10,79 @@ interface ClientThemeProviderProps {
 }
 
 export const ClientThemeProvider = ({
-  children,
-  user,
-}: ClientThemeProviderProps) => {
+                                      children,
+                                      user,
+                                    }: ClientThemeProviderProps) => {
   const theme = useUIStore((s) => s.theme);
   const setTheme = useUIStore((s) => s.setTheme);
 
+  // 1. Инициализация при маунте
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    // Если у юзера есть тема, используем её
+    if (user?.theme && Object.values(UserTheme).includes(user.theme as UserTheme)) {
+      setTheme(user.theme);
+      return;
+    }
 
+    // Иначе пробуем достать из localStorage
     try {
-      if (user?.theme === UserTheme.dark || user?.theme === UserTheme.light) {
-        setTheme(user.theme);
-        return;
-      }
-
-      const localTheme = localStorage.getItem("theme");
-      if (localTheme === UserTheme.light || localTheme === UserTheme.dark) {
+      const localTheme = localStorage.getItem("theme") as UserTheme;
+      if (localTheme && Object.values(UserTheme).includes(localTheme)) {
         setTheme(localTheme);
       }
-    } catch (err) {
-      console.warn("Error reading theme", err);
+    } catch (e) {
+      console.warn("Ошибка доступа к localStorage", e);
     }
-  }, [setTheme, user]);
+  }, [user, setTheme]);
 
+  // 2. Реакция на изменение темы
   useEffect(() => {
-    if (typeof window === "undefined" || !theme) return;
+    if (!theme) return;
 
+    // A. Меняем CSS классы
+    const root = document.documentElement;
+    if (theme === UserTheme.dark) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
+    // B. Сохраняем локально
     try {
       localStorage.setItem("theme", theme);
+    } catch (e) { /* ignore */ }
 
-      const root = document.documentElement;
-      root.classList.toggle("dark", theme === UserTheme.dark);
+    // C. Сохраняем на бэкенд (Безопасный вызов)
+    const saveThemeToApi = async () => {
+      // Пропускаем, если юзера нет или тема совпадает с той, что уже в базе
+      if (!user || user.theme === theme) return;
 
-      if (user) {
-        updateAuthorizedUser({
+      try {
+        console.log(`Сохранение темы: ${theme}...`);
+
+        await updateAuthorizedUser({
           method: "PUT",
           body: { theme },
-        }).catch((err) => console.warn("Failed to update user theme", err));
+        });
+
+        console.log("Тема успешно сохранена на сервере.");
+      } catch (error: any) {
+        // Мы ловим ошибку здесь, чтобы она не краснила консоль Next.js
+        console.warn("⚠️ Не удалось сохранить тему на сервере.");
+
+        // Попытка показать полезную инфу
+        if (error?.message) {
+          console.warn("Сообщение сервера:", error.message);
+        }
+
+        // Совет для отладки
+        console.warn("Проверьте вкладку Network -> Response. Возможно, бэкенд ждет 'DARK' вместо 'dark'?");
       }
-    } catch (err) {
-      console.warn("Error updating theme", err);
-    }
+    };
+
+    saveThemeToApi();
+
   }, [theme, user]);
 
-  return children;
+  return <>{children}</>;
 };

@@ -5,7 +5,7 @@ import { Page } from "@/shared/ui/templates/page";
 
 // Entities & Types
 import { MessagesDTO } from "@/entities/messages";
-import { UserDTO } from "@/entities/user";
+import { UserDTO, UserTheme } from "@/entities/user";
 
 // Widgets & Features
 import { AuthLayout } from "@/widgets/auth-layout/ui";
@@ -16,13 +16,14 @@ import { ChatWindow } from "@/widgets/chat-window/ui";
 // Stores
 import { useChatsStore } from "@/state/chats";
 import { useMessagesStore } from "@/state/messages";
-import { useUserStore } from "@state";
+import { useUserStore, useUIStore } from "@state"; // Импортируем UI store
 
 export const HomePage = () => {
-    // 1. User Store
     const { user, setUser, clearUser } = useUserStore();
 
-    // 2. Chats Store
+    // UI Store для темы
+    const { theme, setTheme } = useUIStore();
+
     const {
         chats,
         activeChatId,
@@ -35,7 +36,6 @@ export const HomePage = () => {
         reset: resetChats
     } = useChatsStore();
 
-    // 3. Messages Store
     const {
         messages,
         isLoading: isMessagesLoading,
@@ -44,19 +44,16 @@ export const HomePage = () => {
         clearMessages
     } = useMessagesStore();
 
-    // Local State
     const [authView, setAuthView] = useState<"login" | "register">("login");
 
     // --- EFFECTS ---
 
-    // 1. Загрузка чатов
     useEffect(() => {
         if (user) {
             fetchChats();
         }
     }, [user, fetchChats]);
 
-    // 2. Загрузка сообщений при смене чата
     useEffect(() => {
         if (activeChatId) {
             fetchMessages(activeChatId);
@@ -78,35 +75,27 @@ export const HomePage = () => {
         setAuthView("login");
     };
 
-    // ОБНОВЛЕННАЯ ЛОГИКА ОТПРАВКИ
     const handleSendMessage = async (input: string | MessagesDTO) => {
         const content = typeof input === "string" ? input : input.content;
-
         let targetChatId = activeChatId;
 
-        // Если чат не выбран — создаем новый
         if (!targetChatId) {
-            // Генерируем название из первых 30 символов сообщения
             const title = content.slice(0, 30) + (content.length > 30 ? "..." : "");
-
-            // createNewChat теперь возвращает ID (см. изменения в chats.store.ts)
             const newChatId = await createNewChat(title);
-
             if (newChatId) {
                 targetChatId = newChatId;
-                // createNewChat в сторе уже делает setActiveChatId(newChatId),
-                // поэтому useEffect сработает и подгрузит (пустой) список сообщений,
-                // но нам не нужно ждать useEffect, чтобы отправить сообщение.
             } else {
-                // Если создать не удалось (ошибка сети), прерываем
                 return;
             }
         }
-
-        // Отправляем сообщение в целевой чат
         if (targetChatId) {
             await sendMessage(targetChatId, content);
         }
+    };
+
+    // Обработчик переключения темы
+    const handleThemeToggle = (isDark: boolean) => {
+        setTheme(isDark ? UserTheme.dark : UserTheme.light);
     };
 
     // --- RENDER ---
@@ -119,33 +108,13 @@ export const HomePage = () => {
                 onBack={() => {}}
                 footerLink={
                     isLogin ? (
-                        <>
-                            Нет аккаунта?{" "}
-                            <button
-                                onClick={() => setAuthView("register")}
-                                className="text-primary hover:underline font-medium"
-                            >
-                                Зарегистрироваться
-                            </button>
-                        </>
+                        <>Нет аккаунта? <button onClick={() => setAuthView("register")} className="text-primary hover:underline font-medium">Зарегистрироваться</button></>
                     ) : (
-                        <>
-                            Есть аккаунт?{" "}
-                            <button
-                                onClick={() => setAuthView("login")}
-                                className="text-primary hover:underline font-medium"
-                            >
-                                Войти
-                            </button>
-                        </>
+                        <>Есть аккаунт? <button onClick={() => setAuthView("login")} className="text-primary hover:underline font-medium">Войти</button></>
                     )
                 }
             >
-                {isLogin ? (
-                    <LoginForm onSuccess={handleAuthSuccess} />
-                ) : (
-                    <RegisterForm onSuccess={handleAuthSuccess} />
-                )}
+                {isLogin ? <LoginForm onSuccess={handleAuthSuccess} /> : <RegisterForm onSuccess={handleAuthSuccess} />}
             </AuthLayout>
         );
     }
@@ -157,19 +126,25 @@ export const HomePage = () => {
                     chats={chats}
                     activeChatId={activeChatId}
                     user={user}
+
+                    // Передаем текущую тему из стора
+                    currentTheme={theme}
+
                     isLoading={isChatsLoading}
-                    onNewChat={() => createNewChat()} // Кнопка "Новый чат" создает с дефолтным названием
+                    onNewChat={() => createNewChat()}
                     onSelectChat={selectChat}
                     onEditChat={updateChatTitle}
                     onDeleteChat={deleteChatById}
                     onLogout={handleLogout}
+
+                    // Передаем обработчик
+                    onThemeToggle={handleThemeToggle}
+
                     className="h-full border-r border-sidebar-border bg-sidebar"
                 />
             }
             Main={
                 <ChatWindow
-                    // Если чат не выбран, передаем пустую строку.
-                    // Теперь это штатная ситуация для "Нового чата" перед первым сообщением
                     chatId={activeChatId || ""}
                     chatTitle={chats.find((c) => c.id === activeChatId)?.title}
                     messages={messages}

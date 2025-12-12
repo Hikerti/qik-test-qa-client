@@ -55,10 +55,10 @@ export const ChatButton = ({
         <Buttons.IconButtonBoth
             onClick={onClick}
             className={clsx(
-                "transition-colors cursor-pointer border border-transparent group relative",
+                "transition-colors cursor-pointer border border-transparent group relative rounded-md",
                 isActive
-                    ? "bg-[#EFEFEF] font-medium"
-                    : "bg-transparent hover:bg-[#F5F5F5]"
+                    ? "bg-[#EFEFEF] dark:bg-[#1E1E1E] "
+                    : "bg-transparent hover:bg-[#F5F5F5] dark:hover:bg-[#1E1E1E] dark:bg-[#121212]"
             )}
             firstIcon={<MessageSquare size={18} className="opacity-70" />}
             secondIcon={
@@ -74,16 +74,7 @@ export const ChatButton = ({
                     </button>
 
                     {isMenuOpen && (
-                        <div className="absolute right-0 top-6 z-10 w-32 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-gray-200 ring-opacity-5 focus:outline-none py-1">
-                            {onEdit && (
-                                <button
-                                    onClick={handleEdit}
-                                    className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
-                                >
-                                    <Pencil size={14} />
-                                    <span>Rename</span>
-                                </button>
-                            )}
+                        <div className="absolute right-0 top-6 z-10 w-32 origin-top-right rounded-md bg-white dark:bg-[#121212] dark:ring-gray-700 shadow-lg ring-1 ring-gray-200 ring-opacity-5 focus:outline-none py-1">
                             {onDelete && (
                                 <button
                                     onClick={handleDelete}
