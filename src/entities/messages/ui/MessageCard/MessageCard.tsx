@@ -39,7 +39,7 @@ export const MessageCard = ({ message }: MessageCardProps) => {
                 <div className="relative flex-1 overflow-hidden">
                     {/* Имя отправителя */}
                     <div className="font-semibold text-sm mb-1 opacity-90 text-gray-900 dark:text-gray-200">
-                        {isAi ? "QIK AI" : "You"}
+                        {isAi ? "QIK" : "You"}
                     </div>
 
                     {/* Текст сообщения */}
